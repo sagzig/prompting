@@ -71,6 +71,11 @@ class Miner(BaseMinerNeuron):
 
         Otherwise, allow the request to be processed further.
         """
+        if self.allowed_validator_hotkey is not None and synapse.dendrite.hotkey != self.allowed_validator_hotkey:
+            # Blocks requests from hotkeys that are not the allowed validator
+            bt.logging.trace(f"Blacklisting hotkey {synapse.dendrite.hotkey} as it is not the allowed validator")
+            return True, "Hotkey not allowed"
+        
         if synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             # Ignore requests from unrecognized entities.
             bt.logging.trace(

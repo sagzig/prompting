@@ -233,7 +233,12 @@ def add_miner_args(cls, parser):
         default="alpha-miners",
         help="Wandb project to log to.",
     )
-
+    parser.add_argument(
+        "--allowed_validator_hotkey",
+        type=str,
+        help="Hotkey of the allowed validator. If set, the miner will only accept queries from this validator.",
+        default=None
+    )
 
 def add_validator_args(cls, parser):
     """Add validator specific arguments to the parser."""
