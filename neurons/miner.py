@@ -40,6 +40,7 @@ class Miner(BaseMinerNeuron):
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
         self.identity_tags = None
+        self.allowed_validator_hotkey = config.allowed_validator_hotkey
 
     async def blacklist(self, synapse: PromptingSynapse) -> typing.Tuple[bool, str]:
         """
