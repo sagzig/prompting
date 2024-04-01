@@ -223,7 +223,7 @@ class HuggingFaceLLM(BaseLLM):
 
 if __name__ == "__main__":
     # Test the HuggingFacePipeline and HuggingFaceLLM
-    model_id = "HuggingFaceH4/zephyr-7b-beta"
+    model_id = "NousResearch/Nous-Hermes-2-SOLAR-10.7B"
     device = "cuda"
     torch_dtype = "float16"
     mock = True
