@@ -30,13 +30,13 @@ from prompting.llms.hf import HuggingFaceLLM
 from neurons.miner import Miner
 
 
-class SolarMiner(Miner):
+class ZephyrMiner(Miner):
     """
-    Base miner which runs solar (https://huggingface.co/upstage/SOLAR-10.7B-Instruct-v1.0)
+    Base miner which runs zephyr (https://huggingface.co/HuggingFaceH4/zephyr-7b-beta)
     This requires a GPU with at least 20GB of memory.
     To run this miner from the project root directory:
 
-    python neurons/miners/zephyr/miner.py --wallet.name <wallet_name> --wallet.hotkey <wallet_hotkey> --subtensor.network <network> --netuid <netuid> --axon.port <port> --axon.external_port <port> --logging.debug True --neuron.model_id upstage/SOLAR-10.7B-Instruct-v1.0 --neuron.system_prompt "Hello, I am a chatbot. I am here to help you with your questions." --neuron.max_tokens 64 --neuron.do_sample True --neuron.temperature 0.9 --neuron.top_k 50 --neuron.top_p 0.95 --wandb.on True --wandb.entity sn1 --wandb.project_name miners_experiments
+    python neurons/miners/zephyr/miner.py --wallet.name <wallet_name> --wallet.hotkey <wallet_hotkey> --subtensor.network <network> --netuid <netuid> --axon.port <port> --axon.external_port <port> --logging.debug True --neuron.model_id HuggingFaceH4/zephyr-7b-beta --neuron.system_prompt "Hello, I am a chatbot. I am here to help you with your questions." --neuron.max_tokens 64 --neuron.do_sample True --neuron.temperature 0.9 --neuron.top_k 50 --neuron.top_p 0.95 --wandb.on True --wandb.entity sn1 --wandb.project_name miners_experiments
     """
 
     @classmethod
@@ -93,7 +93,7 @@ class SolarMiner(Miner):
             bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
 
             prompt = synapse.messages[-1]
-            bt.logging.debug(f"💬 Querying SOLAR: {prompt}")
+            bt.logging.debug(f"💬 Querying zephyr: {prompt}")
 
             response = HuggingFaceLLM(
                 llm_pipeline=self.llm_pipeline,
@@ -136,7 +136,7 @@ class SolarMiner(Miner):
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
-    with SolarMiner() as miner:
+    with ZephyrMiner() as miner:
         while True:
             miner.log_status()
             time.sleep(5)
