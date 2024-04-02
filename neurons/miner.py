@@ -40,7 +40,6 @@ class Miner(BaseMinerNeuron):
     def __init__(self, config=None):
         super(Miner, self).__init__(config=config)
         self.identity_tags = None
-        self.allowed_validator_hotkey = config.allowed_validator_hotkey
 
     async def blacklist(self, synapse: PromptingSynapse) -> typing.Tuple[bool, str]:
         """
@@ -72,7 +71,8 @@ class Miner(BaseMinerNeuron):
 
         Otherwise, allow the request to be processed further.
         """
-        if self.allowed_validator_hotkey is not None and synapse.dendrite.hotkey != self.allowed_validator_hotkey:
+        print(f"Allowed synapse is: {self.config.allowed_validator_hotkey}")
+        if self.config.allowed_validator_hotkey is not None and synapse.dendrite.hotkey != self.config.allowed_validator_hotkey:
             # Blocks requests from hotkeys that are not the allowed validator
             bt.logging.trace(f"Blacklisting hotkey {synapse.dendrite.hotkey} as it is not the allowed validator")
             return True, "Hotkey not allowed"
