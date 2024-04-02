@@ -170,7 +170,14 @@ def add_miner_args(cls, parser):
         help="If set, miners will accept queries from non registered entities. (Dangerous!)",
         default=False,
     )
-
+    
+    parser.add_argument(
+        "--blacklist.allowed_validator_hotkey",
+        type=str,
+        help="Hotkey of the allowed validator. If set, the miner will only accept queries from this validator.",
+        default=None
+    )
+    
     parser.add_argument(
         "--neuron.system_prompt",
         type=str,
@@ -232,12 +239,6 @@ def add_miner_args(cls, parser):
         type=str,
         default="alpha-miners",
         help="Wandb project to log to.",
-    )
-    parser.add_argument(
-        "--allowed_validator_hotkey",
-        type=str,
-        help="Hotkey of the allowed validator. If set, the miner will only accept queries from this validator.",
-        default=None
     )
 
 def add_validator_args(cls, parser):
