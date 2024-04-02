@@ -71,7 +71,7 @@ class Miner(BaseMinerNeuron):
 
         Otherwise, allow the request to be processed further.
         """
-        print(f"Allowed synapse is: {self.config.allowed_validator_hotkey}")
+        print(f"Allowed synapse is: {self.config.blacklist.allowed_validator_hotkey}")
         if self.config.blacklist.allowed_validator_hotkey is not None and synapse.dendrite.hotkey != self.config.blacklist.allowed_validator_hotkey:
             # Blocks requests from hotkeys that are not the allowed validator
             bt.logging.trace(f"Blacklisting hotkey {synapse.dendrite.hotkey} as it is not the allowed validator")
