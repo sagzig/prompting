@@ -46,12 +46,15 @@ async def execute_dendrite_call(dendrite_call):
 def word_count(text):
     return len(text.split())
 
-def calculate_miner_metrics(response_event, reward_result, reference_word_count):
+def calculate_miner_metrics(response_event, agent, reward_result):
     metrics_per_miner = {}
+    reference_word_count = word_count(agent.task.reference)
     for uid, response in zip(response_event.uids, response_event.completions):
         response_word_count = word_count(response)
+        # If response_event.timings is a list, convert it to a Tensor
+        timings_tensor = torch.tensor(response_event.timings) if isinstance(response_event.timings, list) else response_event.timings
         metrics = {
-            "average_response_time": torch.mean(response_event.timings).item(),
+            "average_response_time": torch.mean(timings_tensor).item(),
             "availability": 1 if response.status_code not in [408, 503, 403] else 0,
             "avg_reward": 0.0,
             "median_reward": 0.0,
@@ -143,11 +146,8 @@ async def run_step(
 
     self.update_scores(reward_result.rewards, uids)
 
-    # Calculate and store the word count of the reference
-    reference_word_count = word_count(agent.task.reference)
-
     # Calculate metrics for each miner
-    uid_response_pairs = calculate_miner_metrics(response_event, reward_result, reference_word_count)
+    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
     
     
     # Log the step event.
