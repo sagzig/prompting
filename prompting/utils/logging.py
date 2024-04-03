@@ -133,15 +133,18 @@ def log_event(self, event):
     for uid, metrics in event["uid_response_pairs"].items():
         row = [
             uid,
-            metrics.get("avg_reward", 0),
-            metrics.get("median_reward", 0),
-            metrics.get("std_dev_reward", 0),
-            metrics.get("average_rouge", 0),
-            metrics.get("median_rouge", 0),
-            metrics.get("std_dev_rouge", 0),
-            metrics.get("average_relevance", 0),
-            metrics.get("median_relevance", 0),
-            metrics.get("std_dev_relevance", 0),
+            # Include all the required metrics
+            metrics["avg_reward"],
+            metrics["median_reward"],
+            metrics["std_dev_reward"],
+            metrics["average_rouge"],
+            metrics["median_rouge"],
+            metrics["std_dev_rouge"],
+            metrics["average_relevance"],
+            metrics["median_relevance"],
+            metrics["std_dev_relevance"],
+            metrics["reference_word_count"],
+            metrics["response_word_count"]
         ]
         table_data.append(row)
 
@@ -156,6 +159,8 @@ def log_event(self, event):
         "Avg Relevance", 
         "Median Relevance", 
         "Std Dev Relevance",
+        "Reference Word Count",
+        "Response Word Count"
     ]
 
     wandb_table = wandb.Table(columns=columns, data=table_data)
