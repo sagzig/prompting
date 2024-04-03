@@ -49,13 +49,13 @@ def word_count(text):
 def calculate_miner_metrics(response_event, agent, reward_result):
     metrics_per_miner = {}
     reference_word_count = word_count(agent.task.reference)
-    for uid, response in zip(response_event.uids, response_event.completions):
+    for uid, response, status_code in zip(response_event.uids, response_event.completions, response_event.status_codes):
         response_word_count = word_count(response)
         # If response_event.timings is a list, convert it to a Tensor
         timings_tensor = torch.tensor(response_event.timings) if isinstance(response_event.timings, list) else response_event.timings
+        availability = 0 if status_code in [408, 503, 403] else 1
+        
         metrics = {
-            "average_response_time": torch.mean(timings_tensor).item(),
-            "availability": 1 if response.status_code not in [408, 503, 403] else 0,
             "avg_reward": 0.0,
             "median_reward": 0.0,
             "std_dev_reward": 0.0,
@@ -66,7 +66,9 @@ def calculate_miner_metrics(response_event, agent, reward_result):
             "median_relevance": 0.0,
             "std_dev_relevance": 0.0,
             "reference_word_count": reference_word_count,
-            "response_word_count": response_word_count
+            "response_word_count": response_word_count,
+            "availability": availability,
+            "average_response_time": torch.mean(timings_tensor).item()
         }
 
         for event in reward_result.reward_events:

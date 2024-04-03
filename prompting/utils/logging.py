@@ -24,16 +24,6 @@ class Log:
     reference_time: float
     rewards: List[float]
     task: dict
-    avg_reward: float
-    median_reward: float
-    std_dev_reward: float
-    average_relevance: float
-    median_relevance: float
-    std_dev_relevance: float
-    average_rouge: float
-    median_rouge: float
-    std_dev_rouge: float
-    
     # extra_info: dict
 
 
