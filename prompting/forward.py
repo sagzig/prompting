@@ -47,12 +47,15 @@ def word_count(text):
     return len(text.split())
 
 def calculate_miner_metrics(response_event, agent, reward_result):
+    total_reference_word_count = 0
+    total_response_word_count = 0
+    num_responses = len(response_event.completions)
     metrics_per_miner = {}
     reference_word_count = word_count(agent.task.reference)
-    for uid, response, status_code in zip(response_event.uids, response_event.completions, response_event.status_codes):
+    for uid, response, status_code, timings in zip(response_event.uids, response_event.completions, response_event.status_codes, response_event.timings):
         response_word_count = word_count(response)
-        # If response_event.timings is a list, convert it to a Tensor
-        timings_tensor = torch.tensor(response_event.timings) if isinstance(response_event.timings, list) else response_event.timings
+        total_response_word_count += response_word_count
+        total_reference_word_count += word_count(agent.task.reference)
         availability = 0 if status_code in [408, 503, 403] else 1
         
         metrics = {
@@ -68,7 +71,7 @@ def calculate_miner_metrics(response_event, agent, reward_result):
             "reference_word_count": reference_word_count,
             "response_word_count": response_word_count,
             "availability": availability,
-            "average_response_time": torch.mean(timings_tensor).item()
+            "average_response_time": timings
         }
 
         for event in reward_result.reward_events:
@@ -85,6 +88,14 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         metrics["std_dev_reward"] = torch.std(rewards).item() if rewards.numel() > 0 else 0.0
 
         metrics_per_miner[uid.item()] = metrics
+
+    average_reference_word_count = total_reference_word_count / num_responses
+    average_response_word_count = total_response_word_count / num_responses
+
+    # Add these averages to each miner's metrics
+    for miner_metrics in metrics_per_miner.values():
+        miner_metrics["average_reference_word_count"] = average_reference_word_count
+        miner_metrics["average_response_word_count"] = average_response_word_count
 
     return metrics_per_miner
 
