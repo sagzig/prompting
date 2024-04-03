@@ -17,6 +17,7 @@
 #  THE SOFTWARE.
 
 import time
+import datetime
 import sys
 import asyncio
 import numpy as np
@@ -40,6 +41,9 @@ async def generate_reference(agent):
 async def execute_dendrite_call(dendrite_call):
     responses = await dendrite_call
     return responses
+
+def word_count(text):
+    return len(text.split())
 
 async def run_step(
     self, agent: HumanAgent, k: int, timeout: float, exclude: list = None
@@ -77,6 +81,9 @@ async def run_step(
             
     # Encapsulate the responses in a response event (dataclass)
     response_event = DendriteResponseEvent(responses, uids)
+    # Calculate and store the word count of the reference and responses
+    reference_word_count = word_count(agent.task.reference)
+    response_word_count = [word_count(response) for response in response_event.completions]
     bt.logging.info(f"Created DendriteResponseEvent:\n {response_event}")
     # Reward the responses and get the reward result (dataclass)
     # This contains a list of RewardEvents but can be exported as a dict (column-wise) for logging etc
@@ -100,6 +107,9 @@ async def run_step(
     event = {
         "block": self.block,
         "step_time": time.time() - start_time,
+        "timestamp": datetime.datetime.now().isoformat(),
+        "reference_word_count": reference_word_count,
+        "response_word_count": response_word_count,
         **agent.__state_dict__(full=self.config.neuron.log_full),
         **reward_result.__state_dict__(full=self.config.neuron.log_full),
         **response_event.__state_dict__(),
