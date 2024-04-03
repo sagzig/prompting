@@ -144,7 +144,9 @@ def log_event(self, event):
             metrics["median_relevance"],
             metrics["std_dev_relevance"],
             metrics["reference_word_count"],
-            metrics["response_word_count"]
+            metrics["response_word_count"],
+            metrics["availability"],
+            metrics["average_response_time"],
         ]
         table_data.append(row)
 
@@ -160,9 +162,11 @@ def log_event(self, event):
         "Median Relevance", 
         "Std Dev Relevance",
         "Reference Word Count",
-        "Response Word Count"
+        "Response Word Count",
+        "Availability",
+        "Avg Response Time"
     ]
 
     wandb_table = wandb.Table(columns=columns, data=table_data)
-    self.wandb.log({"Miner Performance": wandb_table})
+    self.wandb.log({"Miners/Metrics": wandb_table})
 

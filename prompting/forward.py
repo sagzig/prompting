@@ -51,6 +51,8 @@ def calculate_miner_metrics(response_event, reward_result, reference_word_count)
     for uid, response in zip(response_event.uids, response_event.completions):
         response_word_count = word_count(response)
         metrics = {
+            "average_response_time": torch.mean(response_event.timings).item(),
+            "availability": 1 if response.status_code not in [408, 503, 403] else 0,
             "avg_reward": 0.0,
             "median_reward": 0.0,
             "std_dev_reward": 0.0,
@@ -81,6 +83,9 @@ def calculate_miner_metrics(response_event, reward_result, reference_word_count)
 
     return metrics_per_miner
 
+def calculate_miner_availability(responses):
+    # Assuming responses contain error codes or similar indicators
+    return [0 if response in [408, 503, 403] else 1 for response in responses]
 
 async def run_step(
     self, agent: HumanAgent, k: int, timeout: float, exclude: list = None
@@ -143,6 +148,7 @@ async def run_step(
 
     # Calculate metrics for each miner
     uid_response_pairs = calculate_miner_metrics(response_event, reward_result, reference_word_count)
+    
     
     # Log the step event.
     event = {
