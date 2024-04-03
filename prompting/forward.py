@@ -22,6 +22,7 @@ import sys
 import asyncio
 import numpy as np
 import bittensor as bt
+import torch
 from prompting.agent import HumanAgent
 from prompting.dendrite import DendriteResponseEvent
 from prompting.conversation import create_task
@@ -44,6 +45,29 @@ async def execute_dendrite_call(dendrite_call):
 
 def word_count(text):
     return len(text.split())
+
+def calculate_miner_metrics(response_event, reward_result):
+    metrics_per_miner = {}
+    for uid in response_event.uids:
+        metrics = {
+            "avg_reward": torch.mean(reward_result.rewards).item(),
+            "median_reward": torch.median(reward_result.rewards).item(),
+            "std_dev_reward": torch.std(reward_result.rewards).item(),
+        }
+
+        # Extract Rouge and Relevance metrics
+        for event in reward_result.reward_events:
+            if event.model_name == "rouge":
+                metrics["average_rouge"] = torch.mean(event.rewards).item()
+                metrics["median_rouge"] = torch.median(event.rewards).item()
+                metrics["std_dev_rouge"] = torch.std(event.rewards).item()
+            elif event.model_name == "relevance":
+                metrics["average_relevance"] = torch.mean(event.rewards).item()
+                metrics["median_relevance"] = torch.median(event.rewards).item()
+                metrics["std_dev_relevance"] = torch.std(event.rewards).item()
+
+        metrics_per_miner[uid.item()] = metrics
+    return metrics_per_miner
 
 async def run_step(
     self, agent: HumanAgent, k: int, timeout: float, exclude: list = None
@@ -82,8 +106,12 @@ async def run_step(
     # Encapsulate the responses in a response event (dataclass)
     response_event = DendriteResponseEvent(responses, uids)
     # Calculate and store the word count of the reference and responses
-    reference_word_count = word_count(agent.task.reference)
-    response_word_count = [word_count(response) for response in response_event.completions]
+    # reference_word_count = word_count(agent.task.reference)
+    # response_word_count = [word_count(response) for response in response_event.completions]
+    # uid_response_pairs = {uid.item(): response.text for uid, response in zip(uids, responses)}
+    # avg_reward = torch.mean(reward_result.rewards).item()
+    # median_reward = torch.median(reward_result.rewards).item()
+    # std_dev_reward = torch.std(reward_result.rewards).item()
     bt.logging.info(f"Created DendriteResponseEvent:\n {response_event}")
     # Reward the responses and get the reward result (dataclass)
     # This contains a list of RewardEvents but can be exported as a dict (column-wise) for logging etc
@@ -110,6 +138,10 @@ async def run_step(
         "timestamp": datetime.datetime.now().isoformat(),
         "reference_word_count": reference_word_count,
         "response_word_count": response_word_count,
+        "uid_response_pairs": uid_response_pairs,
+        "average_reward": avg_reward,
+        "median_reward": median_reward,
+        "std_dev_reward": std_dev_reward,
         **agent.__state_dict__(full=self.config.neuron.log_full),
         **reward_result.__state_dict__(full=self.config.neuron.log_full),
         **response_event.__state_dict__(),

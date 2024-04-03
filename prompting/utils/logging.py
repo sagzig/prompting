@@ -2,7 +2,7 @@ import json
 import os
 import copy
 import wandb
-import pandas as pd
+from wandb.apis import public
 import bittensor as bt
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -24,6 +24,16 @@ class Log:
     reference_time: float
     rewards: List[float]
     task: dict
+    avg_reward: float
+    median_reward: float
+    std_dev_reward: float
+    average_relevance: float
+    median_relevance: float
+    std_dev_relevance: float
+    average_rouge: float
+    median_rouge: float
+    std_dev_rouge: float
+    
     # extra_info: dict
 
 
@@ -118,3 +128,36 @@ def log_event(self, event):
 
     # Log the event to wandb.
     self.wandb.log(event)
+    
+    table_data = []
+    for uid, metrics in event["uid_response_pairs"].items():
+        row = [
+            uid,
+            metrics.get("avg_reward", 0),
+            metrics.get("median_reward", 0),
+            metrics.get("std_dev_reward", 0),
+            metrics.get("average_rouge", 0),
+            metrics.get("median_rouge", 0),
+            metrics.get("std_dev_rouge", 0),
+            metrics.get("average_relevance", 0),
+            metrics.get("median_relevance", 0),
+            metrics.get("std_dev_relevance", 0),
+        ]
+        table_data.append(row)
+
+    columns = [
+        "UID", 
+        "Avg Reward", 
+        "Median Reward", 
+        "Std Dev Reward", 
+        "Avg Rouge", 
+        "Median Rouge", 
+        "Std Dev Rouge",
+        "Avg Relevance", 
+        "Median Relevance", 
+        "Std Dev Relevance",
+    ]
+
+    wandb_table = wandb.Table(columns=columns, data=table_data)
+    self.wandb.log({"Miner Performance": wandb_table})
+
