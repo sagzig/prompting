@@ -54,30 +54,44 @@ def calculate_miner_metrics(response_event, agent, reward_result):
 
     for uid, response, status_code, timings in zip(response_event.uids, response_event.completions, response_event.status_codes, response_event.timings):
         uid_str = str(uid.item())
+        
+        # Retrieve metrics
         response_wc = word_count(response)
         reference_wc = word_count(agent.task.reference)
         challenge_wc = word_count(agent.challenge)
+        challenge_time = agent.challenge_time
+        reference_time = agent.task.reference_time
+        step_time = response_event.step_time
+        
+        # Retrieve rewards and scores from RewardEvent
+        reward = reward_result.rewards[response_event.uids == uid].item() 
+        rouge_score = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "rouge")
+        relevance_score = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "relevance")
 
-        # Initialize metrics for each miner
+        # Initialize or update metrics for each miner
         if uid_str not in miner_metrics_dict:
             miner_metrics_dict[uid_str] = MetricsSchema(miner_uid=uid_str)
-        
         miner_metrics = miner_metrics_dict[uid_str]
 
         # Assign metrics for current run
-        miner_metrics.reward = sum(reward_result.rewards[response_event.uids == uid].tolist())
-        miner_metrics.rouge = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "rouge")
-        miner_metrics.relevance = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "relevance")
+        miner_metrics.reward = reward
+        miner_metrics.rouge = rouge_score
+        miner_metrics.relevance = relevance_score
         miner_metrics.reference_word_count = reference_wc
         miner_metrics.response_word_count = response_wc
         miner_metrics.challenge_word_count = challenge_wc
         miner_metrics.availability = 1 if status_code not in [408, 503, 403] else 0
         miner_metrics.response_time = timings
+        miner_metrics.challenge_time = challenge_time
+        miner_metrics.reference_time = reference_time
+        miner_metrics.step_time = step_time
 
+        # Update Prometheus metrics
         update_metrics_for_miner(uid_str, miner_metrics)
         bt.logging.info(f"Updated metrics for miner UID: {uid_str}")
 
     return list(miner_metrics_dict.values())
+
 
 
 async def run_step(

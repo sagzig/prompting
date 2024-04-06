@@ -381,10 +381,11 @@ def add_validator_args(cls, parser):
         default=False,
     )
     
-    parser.add_argument("--prometheus_port",
-                        type=int,
-                        help="Port for prometheus metrics",
-                        default=8000
+    parser.add_argument(
+        "--prometheus_port",
+        type=int,
+        help="Port for prometheus metrics",
+        default=8000
     )
 
 def config(cls):
