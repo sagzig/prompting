@@ -70,13 +70,12 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         # Fetch the rewards and scores for each UID
         reward = reward_result.rewards[response_event.uids == uid].item()
         for event in reward_result.reward_events:
-            uid_index = (event.uids == uid).nonzero(as_tuple=True)[0]
-            if uid_index.nelement() != 0:  # UID found in event
-                uid_index = uid_index.item()
+            if uid in response_event.uids:
+                index = (response_event.uids == uid).nonzero(as_tuple=True)[0].item()
                 if event.model_name == "rouge":
-                    rouge_score = event.rewards[uid_index].item()
+                    rouge_score = event.rewards[index].item()
                 elif event.model_name == "relevance":
-                    relevance_score = event.rewards[uid_index].item()
+                    relevance_score = event.rewards[index].item()
 
 
         # Update or create metrics
@@ -112,7 +111,7 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         # Store back in the dictionary
         miner_metrics_dict[uid_str] = miner_metrics
 
-        bt.logging.debug(f"Metrics for UID {uid_str}: {miner_metrics}")
+        bt.logging.debug(f"CalcMetrics for UID {uid_str}: {miner_metrics}")
 
         # Update Prometheus metrics
         update_metrics_for_miner(uid_str, miner_metrics)
