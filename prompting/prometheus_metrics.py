@@ -1,8 +1,7 @@
 from prometheus_client import Gauge, Summary, Histogram, Enum
-from prometheus_client import start_http_server
 
 
-# Defining the Gauges for each metric
+# Defining the Type for each metric
 reward_gauge = Gauge('reward', 'Reward for each response', ['miner_uid'])
 rouge_gauge = Gauge('rouge', 'Rouge score for each response', ['miner_uid'])
 relevance_gauge = Gauge('relevance', 'Relevance score for each response', ['miner_uid'])

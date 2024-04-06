@@ -22,8 +22,8 @@ import sys
 import asyncio
 import numpy as np
 import bittensor as bt
-from metrics_schema import MetricsSchema
-import prometheus_metrics as pm
+from prompting.metrics_schema import MetricsSchema
+from prompting.prometheus_metrics import update_metrics_for_miner
 from prompting.agent import HumanAgent
 from prompting.dendrite import DendriteResponseEvent
 from prompting.conversation import create_task
@@ -74,7 +74,7 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         miner_metrics.availability = 1 if status_code not in [408, 503, 403] else 0
         miner_metrics.response_time = timings
 
-        pm.update_metrics_for_miner(uid_str, miner_metrics)
+        update_metrics_for_miner(uid_str, miner_metrics)
         bt.logging.info(f"Updated metrics for miner UID: {uid_str}")
 
     return list(miner_metrics_dict.values())
