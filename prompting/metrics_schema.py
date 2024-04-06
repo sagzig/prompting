@@ -3,7 +3,6 @@ from dataclasses import dataclass
 @dataclass
 class MetricsSchema:
     miner_uid: str
-    block: str
     timestamp: str
     step_time: float
     challenge_time: float

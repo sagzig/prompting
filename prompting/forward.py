@@ -70,7 +70,21 @@ def calculate_miner_metrics(response_event, agent, reward_result):
 
         # Initialize or update metrics for each miner
         if uid_str not in miner_metrics_dict:
-            miner_metrics_dict[uid_str] = MetricsSchema(miner_uid=uid_str)
+            miner_metrics_dict[uid_str] = MetricsSchema(
+                miner_uid=uid_str,
+                timestamp=datetime.datetime.now().isoformat(),
+                step_time=step_time,
+                challenge_time=challenge_time,
+                reference_time=reference_time,
+                reward=reward,
+                rouge=rouge_score,
+                relevance=relevance_score,
+                reference_word_count=reference_wc,
+                response_word_count=response_wc,
+                challenge_word_count=challenge_wc,
+                availability=1 if status_code not in [408, 503, 403] else 0,
+                response_time=timings
+            )
         miner_metrics = miner_metrics_dict[uid_str]
 
         # Assign metrics for current run
