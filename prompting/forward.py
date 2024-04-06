@@ -168,7 +168,7 @@ async def run_step(
     self.update_scores(reward_result.rewards, uids)
 
     # Calculate metrics for each miner
-    # uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
+    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
     
     
     # Log the step event.
