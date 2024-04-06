@@ -165,7 +165,7 @@ async def run_step(
     self.update_scores(reward_result.rewards, uids)
 
     # Calculate metrics for each miner
-    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
+    # uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
     
     
     # Log the step event.
@@ -173,7 +173,7 @@ async def run_step(
         "block": self.block,
         "step_time": time.time() - start_time,
         "timestamp": datetime.datetime.now().isoformat(),
-        "uid_response_pairs": uid_response_pairs,
+        # "uid_response_pairs": uid_response_pairs,
         **agent.__state_dict__(full=self.config.neuron.log_full),
         **reward_result.__state_dict__(full=self.config.neuron.log_full),
         **response_event.__state_dict__(),
