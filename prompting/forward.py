@@ -64,10 +64,16 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         step_time = getattr(response_event, 'step_time', 0)
         
         # Retrieve rewards and scores from RewardEvent
-        reward = reward_result.rewards[response_event.uids == uid].item() 
-        rouge_score = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "rouge")
-        relevance_score = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "relevance")
-
+        reward = reward_result.rewards[response_event.uids == uid].item()
+        rouge_score = 0
+        relevance_score = 0
+        for event in reward_result.reward_events:
+            if uid in event.uids:
+                if event.model_name == "rouge":
+                    rouge_score = event.rewards.item()
+                elif event.model_name == "relevance":
+                    relevance_score = event.rewards.item()
+                    
         # Initialize or update metrics for each miner
         if uid_str not in miner_metrics_dict:
             miner_metrics_dict[uid_str] = MetricsSchema(
@@ -85,7 +91,8 @@ def calculate_miner_metrics(response_event, agent, reward_result):
                 availability=1 if status_code not in [408, 503, 403] else 0,
                 response_time=timings
             )
-        miner_metrics = miner_metrics_dict[uid_str]
+        else:
+            miner_metrics = miner_metrics_dict[uid_str]
 
         # Assign metrics for current run
         miner_metrics.reward = reward
