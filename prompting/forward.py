@@ -57,11 +57,11 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         
         # Retrieve metrics
         response_wc = word_count(response)
-        reference_wc = word_count(agent.task.reference)
+        reference_wc = word_count(agent.task.reference) if hasattr(agent.task, 'reference') else 0
         challenge_wc = word_count(agent.challenge)
-        challenge_time = agent.challenge_time
-        reference_time = agent.task.reference_time
-        step_time = response_event.step_time
+        challenge_time = getattr(agent, 'challenge_time', 0)
+        reference_time = getattr(agent.task, 'reference_time', 0)
+        step_time = getattr(response_event, 'step_time', 0)
         
         # Retrieve rewards and scores from RewardEvent
         reward = reward_result.rewards[response_event.uids == uid].item() 
