@@ -1,5 +1,5 @@
 from prometheus_client import Gauge, Summary, Histogram, Enum
-
+import bittensor as bt
 
 # Defining the Type for each metric
 reward_gauge = Gauge('reward', 'Reward for each response', ['miner_uid'])
@@ -20,3 +20,5 @@ def update_metrics_for_miner(uid, miner_metrics):
     challenge_word_count_gauge.labels(miner_uid=uid).set(miner_metrics.challenge_word_count)
     availability_gauge.labels(miner_uid=uid).set(miner_metrics.availability)
     response_time_histogram.labels(miner_uid=uid).observe(miner_metrics.response_time)
+
+    bt.logging.debug(f"Updating Prometheus Metrics for miner {uid}: {miner_metrics}")
