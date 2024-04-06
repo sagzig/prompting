@@ -70,10 +70,14 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         # Fetch the rewards and scores for each UID
         reward = reward_result.rewards[response_event.uids == uid].item()
         for event in reward_result.reward_events:
-            if event.model_name == "rouge":
-                rouge_score = event.rewards[uid].item()
-            elif event.model_name == "relevance":
-                relevance_score = event.rewards[uid].item()
+            uid_index = (event.uids == uid).nonzero(as_tuple=True)[0]
+            if uid_index.nelement() != 0:  # UID found in event
+                uid_index = uid_index.item()
+                if event.model_name == "rouge":
+                    rouge_score = event.rewards[uid_index].item()
+                elif event.model_name == "relevance":
+                    relevance_score = event.rewards[uid_index].item()
+
 
         # Update or create metrics
         miner_metrics = miner_metrics_dict.get(uid_str, MetricsSchema(
