@@ -380,7 +380,12 @@ def add_validator_args(cls, parser):
         help="Only query a single hotkey per ip.",
         default=False,
     )
-
+    
+    parser.add_argument("--prometheus_port",
+                        type=int,
+                        help="Port for prometheus metrics",
+                        default=8000
+    )
 
 def config(cls):
     """

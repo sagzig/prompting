@@ -22,7 +22,8 @@ import sys
 import asyncio
 import numpy as np
 import bittensor as bt
-import torch
+from metrics_schema import MetricsSchema
+import prometheus_metrics as pm
 from prompting.agent import HumanAgent
 from prompting.dendrite import DendriteResponseEvent
 from prompting.conversation import create_task
@@ -46,62 +47,38 @@ async def execute_dendrite_call(dendrite_call):
 def word_count(text):
     return len(text.split())
 
+miner_metrics_dict = {} 
+
 def calculate_miner_metrics(response_event, agent, reward_result):
-    total_reference_word_count = 0
-    total_response_word_count = 0
-    num_responses = len(response_event.completions)
-    metrics_per_miner = {}
-    reference_word_count = word_count(agent.task.reference)
+    global miner_metrics_dict
+
     for uid, response, status_code, timings in zip(response_event.uids, response_event.completions, response_event.status_codes, response_event.timings):
-        response_word_count = word_count(response)
-        total_response_word_count += response_word_count
-        total_reference_word_count += word_count(agent.task.reference)
-        availability = 0 if status_code in [408, 503, 403] else 1
+        uid_str = str(uid.item())
+        response_wc = word_count(response)
+        reference_wc = word_count(agent.task.reference)
+        challenge_wc = word_count(agent.challenge)
+
+        # Initialize metrics for each miner
+        if uid_str not in miner_metrics_dict:
+            miner_metrics_dict[uid_str] = MetricsSchema(miner_uid=uid_str)
         
-        metrics = {
-            "avg_reward": 0.0,
-            "median_reward": 0.0,
-            "std_dev_reward": 0.0,
-            "average_rouge": 0.0,
-            "median_rouge": 0.0,
-            "std_dev_rouge": 0.0,
-            "average_relevance": 0.0,
-            "median_relevance": 0.0,
-            "std_dev_relevance": 0.0,
-            "reference_word_count": reference_word_count,
-            "response_word_count": response_word_count,
-            "availability": availability,
-            "average_response_time": timings
-        }
+        miner_metrics = miner_metrics_dict[uid_str]
 
-        for event in reward_result.reward_events:
-            if event.model_name == "rouge" or event.model_name == "relevance":
-                model_name_prefix = "average_" if event.model_name == "rouge" else "average_"
-                metrics[model_name_prefix + event.model_name] = torch.mean(event.rewards).item()
-                metrics["median_" + event.model_name] = torch.median(event.rewards).item()
-                metrics["std_dev_" + event.model_name] = torch.std(event.rewards).item()
-        
-        # Update reward metrics separately
-        rewards = reward_result.rewards[response_event.uids == uid]
-        metrics["avg_reward"] = torch.mean(rewards).item() if rewards.numel() > 0 else 0.0
-        metrics["median_reward"] = torch.median(rewards).item() if rewards.numel() > 0 else 0.0
-        metrics["std_dev_reward"] = torch.std(rewards).item() if rewards.numel() > 0 else 0.0
+        # Assign metrics for current run
+        miner_metrics.reward = sum(reward_result.rewards[response_event.uids == uid].tolist())
+        miner_metrics.rouge = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "rouge")
+        miner_metrics.relevance = sum(event.rewards.tolist() for event in reward_result.reward_events if event.model_name == "relevance")
+        miner_metrics.reference_word_count = reference_wc
+        miner_metrics.response_word_count = response_wc
+        miner_metrics.challenge_word_count = challenge_wc
+        miner_metrics.availability = 1 if status_code not in [408, 503, 403] else 0
+        miner_metrics.response_time = timings
 
-        metrics_per_miner[uid.item()] = metrics
+        pm.update_metrics_for_miner(uid_str, miner_metrics)
+        bt.logging.info(f"Updated metrics for miner UID: {uid_str}")
 
-    average_reference_word_count = total_reference_word_count / num_responses
-    average_response_word_count = total_response_word_count / num_responses
+    return list(miner_metrics_dict.values())
 
-    # Add these averages to each miner's metrics
-    for miner_metrics in metrics_per_miner.values():
-        miner_metrics["average_reference_word_count"] = average_reference_word_count
-        miner_metrics["average_response_word_count"] = average_response_word_count
-
-    return metrics_per_miner
-
-def calculate_miner_availability(responses):
-    # Assuming responses contain error codes or similar indicators
-    return [0 if response in [408, 503, 403] else 1 for response in responses]
 
 async def run_step(
     self, agent: HumanAgent, k: int, timeout: float, exclude: list = None

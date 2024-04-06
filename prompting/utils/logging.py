@@ -119,44 +119,44 @@ def log_event(self, event):
     # Log the event to wandb.
     self.wandb.log(event)
     
-    table_data = []
-    for uid, metrics in event["uid_response_pairs"].items():
-        row = [
-            uid,
-            # Include all the required metrics
-            metrics["avg_reward"],
-            metrics["median_reward"],
-            metrics["std_dev_reward"],
-            metrics["average_rouge"],
-            metrics["median_rouge"],
-            metrics["std_dev_rouge"],
-            metrics["average_relevance"],
-            metrics["median_relevance"],
-            metrics["std_dev_relevance"],
-            metrics["reference_word_count"],
-            metrics["response_word_count"],
-            metrics["availability"],
-            metrics["average_response_time"],
-        ]
-        table_data.append(row)
+    # table_data = []
+    # for uid, metrics in event["uid_response_pairs"].items():
+    #     row = [
+    #         uid,
+    #         metrics["avg_reward"],
+    #         metrics["median_reward"],
+    #         metrics["std_dev_reward"],
+    #         metrics["average_rouge"],
+    #         metrics["median_rouge"],
+    #         metrics["std_dev_rouge"],
+    #         metrics["average_relevance"],
+    #         metrics["median_relevance"],
+    #         metrics["std_dev_relevance"],
+    #         metrics["reference_word_count"],
+    #         metrics["response_word_count"],
+    #         metrics["availability"],
+    #         metrics["average_response_time"],
+    #     ]
+    #     bt.logging.info(f"Logging metrics for miner UID: {uid}")
+    #     table_data.append(row)
 
-    columns = [
-        "UID", 
-        "Avg Reward", 
-        "Median Reward", 
-        "Std Dev Reward", 
-        "Avg Rouge", 
-        "Median Rouge", 
-        "Std Dev Rouge",
-        "Avg Relevance", 
-        "Median Relevance", 
-        "Std Dev Relevance",
-        "Reference Word Count",
-        "Response Word Count",
-        "Availability",
-        "Avg Response Time"
-    ]
+    # columns = [
+    #     "UID", 
+    #     "Avg Reward", 
+    #     "Median Reward", 
+    #     "Std Dev Reward", 
+    #     "Avg Rouge", 
+    #     "Median Rouge", 
+    #     "Std Dev Rouge",
+    #     "Avg Relevance", 
+    #     "Median Relevance", 
+    #     "Std Dev Relevance",
+    #     "Reference Word Count",
+    #     "Response Word Count",
+    #     "Availability",
+    #     "Avg Response Time"
+    # ]
 
-    wandb_table = wandb.Table(columns=columns, data=table_data)
-    self.wandb.log({"Miners/Metrics": wandb_table})
+    # wandb_table = wandb.Table(columns=columns, data=table_data)
+    # self.wandb.log({"Miners/Metrics": wandb_table})
 

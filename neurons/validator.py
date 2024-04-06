@@ -21,6 +21,8 @@ from prompting.forward import forward
 from prompting.llms import HuggingFacePipeline, vLLMPipeline
 from prompting.base.validator import BaseValidatorNeuron
 from prompting.rewards import RewardPipeline
+from prometheus_client import start_http_server
+
 
 
 class Validator(BaseValidatorNeuron):
@@ -53,6 +55,11 @@ class Validator(BaseValidatorNeuron):
         self.reward_pipeline = RewardPipeline(
             selected_tasks=self.active_tasks, device=self.device
         )
+        
+        # Initialize the Prometheus HTTP server
+        prometheus_port = self.config.prometheus_port
+        start_http_server(prometheus_port)
+        print(f"Prometheus metrics server started on port {prometheus_port}")
 
     async def forward(self):
         """
