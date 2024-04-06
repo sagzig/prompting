@@ -21,4 +21,5 @@ def update_metrics_for_miner(uid, miner_metrics):
     availability_gauge.labels(miner_uid=uid).set(miner_metrics.availability)
     response_time_histogram.labels(miner_uid=uid).observe(miner_metrics.response_time)
 
-    bt.logging.debug(f"Updating Prometheus Metrics for miner {uid}: {miner_metrics}")
+    bt.logging.debug(f"Updating Prometheus metrics for miner UID: {uid}")
+    print(f"DEBUG: Updating Prometheus metrics for miner UID: {uid}") 

@@ -100,10 +100,13 @@ def calculate_miner_metrics(response_event, agent, reward_result):
         miner_metrics.reference_time = reference_time
         miner_metrics.step_time = step_time
 
-        bt.logging.debug(f"Calculated Metrics for UID {uid_str}: Reward - {reward}, Rouge - {rouge_score}, Relevance - {relevance_score}")
-        
+        bt.logging.debug(f"Metrics for UID {uid_str}: {miner_metrics}")
+        print(f"DEBUG: Calculated Metrics for UID {uid_str}: {miner_metrics}") 
+
         # Update Prometheus metrics
         update_metrics_for_miner(uid_str, miner_metrics)
+        print(f"DEBUG: Updated Prometheus metrics for UID {uid_str}") 
+
     return list(miner_metrics_dict.values())
 
 
