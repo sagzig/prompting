@@ -240,6 +240,19 @@ def add_miner_args(cls, parser):
         default="alpha-miners",
         help="Wandb project to log to.",
     )
+    parser.add_argument(
+        "--wandb.weights_step_length",
+        type=int,
+        help="How many steps before we log the weights.",
+        default=10,
+    )
+    parser.add_argument(
+        "--wandb.run_step_length",
+        type=int,
+        help="How many steps before we rollover to a new run.",
+        default=360,
+    )
+
 
 def add_validator_args(cls, parser):
     """Add validator specific arguments to the parser."""
@@ -367,7 +380,13 @@ def add_validator_args(cls, parser):
         help="Only query a single hotkey per ip.",
         default=False,
     )
-
+    
+    parser.add_argument(
+        "--prometheus_port",
+        type=int,
+        help="Port for prometheus metrics",
+        default=8000
+    )
 
 def config(cls):
     """

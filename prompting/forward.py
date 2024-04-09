@@ -17,10 +17,13 @@
 #  THE SOFTWARE.
 
 import time
+import datetime
 import sys
 import asyncio
 import numpy as np
 import bittensor as bt
+from prompting.metrics_schema import MetricsSchema
+from prompting.prometheus_metrics import update_metrics_for_miner
 from prompting.agent import HumanAgent
 from prompting.dendrite import DendriteResponseEvent
 from prompting.conversation import create_task
@@ -40,6 +43,83 @@ async def generate_reference(agent):
 async def execute_dendrite_call(dendrite_call):
     responses = await dendrite_call
     return responses
+
+def word_count(text):
+    return len(text.split())
+
+miner_metrics_dict = {} 
+
+def calculate_miner_metrics(response_event, agent, reward_result):
+    global miner_metrics_dict
+
+    for uid, response, status_code, timings in zip(response_event.uids, response_event.completions, response_event.status_codes, response_event.timings):
+        uid_str = str(uid.item())
+        
+        # Retrieve metrics
+        response_wc = word_count(response)
+        reference_wc = word_count(agent.task.reference) if hasattr(agent.task, 'reference') else 0
+        challenge_wc = word_count(agent.challenge)
+        challenge_time = getattr(agent, 'challenge_time', 0)
+        reference_time = getattr(agent.task, 'reference_time', 0)
+        step_time = getattr(response_event, 'step_time', 0)
+        
+        # Initialize or reset the scores
+        rouge_score = 0
+        relevance_score = 0
+
+        # Fetch the rewards and scores for each UID
+        reward = reward_result.rewards[response_event.uids == uid].item()
+        for event in reward_result.reward_events:
+            if uid in response_event.uids:
+                index = (response_event.uids == uid).nonzero(as_tuple=True)[0].item()
+                if event.model_name == "rouge":
+                    rouge_score = event.rewards[index].item()
+                elif event.model_name == "relevance":
+                    relevance_score = event.rewards[index].item()
+
+
+        # Update or create metrics
+        miner_metrics = miner_metrics_dict.get(uid_str, MetricsSchema(
+            miner_uid=uid_str,
+            timestamp=datetime.datetime.now().isoformat(),
+            step_time=0,
+            challenge_time=0,
+            reference_time=0,
+            reward=0,
+            rouge=0,
+            relevance=0,
+            reference_word_count=0,
+            response_word_count=0,
+            challenge_word_count=0,
+            availability=0,
+            response_time=0
+        ))
+
+        # Assign metrics for the current run
+        miner_metrics.reward = reward
+        miner_metrics.rouge = rouge_score
+        miner_metrics.relevance = relevance_score
+        miner_metrics.reference_word_count = reference_wc
+        miner_metrics.response_word_count = response_wc
+        miner_metrics.challenge_word_count = challenge_wc
+        miner_metrics.availability = 1 if status_code not in [408, 503, 403] else 0
+        miner_metrics.response_time = timings
+        miner_metrics.challenge_time = challenge_time
+        miner_metrics.reference_time = reference_time
+        miner_metrics.step_time = step_time
+
+        # Store back in the dictionary
+        miner_metrics_dict[uid_str] = miner_metrics
+
+        bt.logging.debug(f"CalcMetrics for UID {uid_str}: {miner_metrics}")
+
+        # Update Prometheus metrics
+        update_metrics_for_miner(uid_str, miner_metrics)
+
+    return list(miner_metrics_dict.values())
+
+
+
 
 async def run_step(
     self, agent: HumanAgent, k: int, timeout: float, exclude: list = None
@@ -77,6 +157,7 @@ async def run_step(
             
     # Encapsulate the responses in a response event (dataclass)
     response_event = DendriteResponseEvent(responses, uids)
+    # Calculate and store the word count of the reference and responses
     bt.logging.info(f"Created DendriteResponseEvent:\n {response_event}")
     # Reward the responses and get the reward result (dataclass)
     # This contains a list of RewardEvents but can be exported as a dict (column-wise) for logging etc
@@ -87,7 +168,7 @@ async def run_step(
         device=self.device,
     )
     bt.logging.info(f"Created RewardResult:\n {reward_result}")
-
+    
     # The original idea was that the agent is 'satisfied' when it gets a good enough response (e.g. reward critera is met, such as ROUGE>threshold)
     agent.update_progress(
         top_reward=reward_result.rewards.max(),
@@ -96,10 +177,16 @@ async def run_step(
 
     self.update_scores(reward_result.rewards, uids)
 
+    # Calculate metrics for each miner
+    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
+    
+    
     # Log the step event.
     event = {
         "block": self.block,
         "step_time": time.time() - start_time,
+        "timestamp": datetime.datetime.now().isoformat(),
+        # "uid_response_pairs": uid_response_pairs,
         **agent.__state_dict__(full=self.config.neuron.log_full),
         **reward_result.__state_dict__(full=self.config.neuron.log_full),
         **response_event.__state_dict__(),
