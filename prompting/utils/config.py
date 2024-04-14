@@ -176,6 +176,13 @@ def add_miner_args(cls, parser):
         help="If set, miners will accept queries from non registered entities. (Dangerous!)",
         default=False,
     )
+    
+    parser.add_argument(
+        "--blacklist.allowed_validator_hotkey",
+        type=str,
+        help="Hotkey of the allowed validator. If set, the miner will only accept queries from this validator.",
+        default=None
+    )
 
     parser.add_argument(
         "--neuron.system_prompt",
