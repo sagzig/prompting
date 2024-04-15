@@ -1,6 +1,6 @@
 import bittensor as bt
-from prompting.utils.metrics_schema import MetricsSchema
-from prompting.utils.prometheus import MinerMetrics
+from metrics_schema import MetricsSchema
+from prometheus import MinerMetrics
 
 
 def word_count(text):
