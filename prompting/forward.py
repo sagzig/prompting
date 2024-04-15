@@ -31,6 +31,7 @@ from prompting.rewards import RewardResult
 from prompting.utils.uids import get_random_uids
 from prompting.utils.logging import log_event
 from prompting.utils.misc import async_log, serialize_exception_to_string
+from prompting.utils.metrics import calculate_miner_metrics
 from dataclasses import dataclass
 
 @async_log
@@ -248,6 +249,10 @@ async def run_step(
         serialize_exception_to_string(stream_result.exception)
         for stream_result in stream_results
     ]
+
+    # Calculate metrics for each miner
+    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
+
     # Log the step event.
     event = {
         "block": self.block,

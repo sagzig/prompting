@@ -390,6 +390,13 @@ def add_validator_args(cls, parser):
     )
     
     parser.add_argument(
+        "--prometheus_port",
+        type=int,
+        help="Port for prometheus metrics",
+        default=8000
+    )
+
+    parser.add_argument(
         "--neuron.forward_max_time",
         type=int,
         help="Max time to wait for a forward call to complete in seconds.",
