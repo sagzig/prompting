@@ -1,7 +1,6 @@
 import bittensor as bt
-import datetime
-from prompting.prompting.utils.metrics_schema import MetricsSchema
-from sagi.prompting.prompting.utils.prometheus import MinerMetrics
+from prompting.utils.metrics_schema import MetricsSchema
+from prompting.utils.prometheus import MinerMetrics
 
 
 def word_count(text):
