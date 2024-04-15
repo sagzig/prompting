@@ -56,6 +56,7 @@ class Validator(BaseValidatorNeuron):
 
         # Initialize the Prometheus HTTP server
         prometheus_port = self.config.prometheus_port
+        print(f"Configured Prometheus port: {prometheus_port}")
         start_http_server(prometheus_port)
         print(f"Prometheus metrics server started on port {prometheus_port}")
 
