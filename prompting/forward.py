@@ -255,8 +255,9 @@ async def run_step(
 
     # Calculate metrics for each miner
     bt.logging.info("Calculating miner metrics...")
-    asyncio.create_task(calculate_miner_metrics(response_event, agent, reward_result))
-
+    uid_response_pairs = calculate_miner_metrics(response_event, agent, reward_result)
+    print(uid_response_pairs)
+    
     # Log the step event.
     event = {
         "block": self.block,
