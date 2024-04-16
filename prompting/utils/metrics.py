@@ -7,7 +7,7 @@ def word_count(text):
     return len(text.split())
 
 miner_metrics_dict = {} 
-def calculate_miner_metrics(response_event, agent, reward_result):
+async def calculate_miner_metrics(response_event, agent, reward_result):
     global miner_metrics_dict
 
     for uid, response, status_code, timings in zip(response_event.uids, response_event.completions, response_event.status_codes, response_event.timings):
