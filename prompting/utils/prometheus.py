@@ -15,7 +15,7 @@ class MinerMetrics:
     }
 
     @staticmethod
-    def update_metrics_for_miner(uid, **metrics):
+    def update_metrics_for_miner(uid, metrics):
         for key, value in metrics.items():
             metric = MinerMetrics.metrics.get(key)
             if metric:
@@ -24,4 +24,3 @@ class MinerMetrics:
                 elif isinstance(metric, Histogram):
                     metric.labels(miner_uid=uid).observe(value)
             bt.logging.debug(f"Updated Prometheus metric '{key}' for miner UID: {uid}")
-        print(f"DEBUG: Updated Prometheus metrics for miner UID: {uid}")
