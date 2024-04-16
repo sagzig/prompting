@@ -61,5 +61,6 @@ def calculate_miner_metrics(response_event, agent, reward_result):
 
         # Update Prometheus metrics
         MinerMetrics.update_metrics_for_miner(uid_str, miner_metrics)
+        bt.logging.info(f"Updated metrics for miner UID: {uid_str}")
 
     return list(miner_metrics_dict.values())
