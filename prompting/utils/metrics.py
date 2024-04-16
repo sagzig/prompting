@@ -14,9 +14,9 @@ async def calculate_miner_metrics(response_event, agent, reward_result):
         uid_str = str(uid.item())
         
         # Retrieve metrics
-        response_wc = word_count(response)
-        reference_wc = word_count(agent.task.reference) if hasattr(agent.task, 'reference') else 0
-        challenge_wc = word_count(agent.challenge)
+        response_word_count = word_count(response)
+        reference_word_count = word_count(agent.task.reference) if hasattr(agent.task, 'reference') else 0
+        challenge_word_count = word_count(agent.challenge)
         challenge_time = getattr(agent, 'challenge_time', 0)
         reference_time = getattr(agent.task, 'reference_time', 0)
         step_time = getattr(response_event, 'step_time', 0)
@@ -44,9 +44,9 @@ async def calculate_miner_metrics(response_event, agent, reward_result):
             reward=reward,
             rouge_score=rouge_score,
             relevance_score=relevance_score,
-            response_wc=response_wc,
-            reference_wc=reference_wc,
-            challenge_wc=challenge_wc,
+            response_word_count=response_word_count,
+            reference_word_count=reference_word_count,
+            challenge_word_count=challenge_word_count,
             status_code=status_code,
             timings=timings,
             challenge_time=challenge_time,
