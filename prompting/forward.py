@@ -31,6 +31,7 @@ from prompting.rewards import RewardResult
 from prompting.utils.uids import get_random_uids
 from prompting.utils.logging import log_event
 from prompting.utils.misc import async_log, serialize_exception_to_string
+from prompting.utils.metrics import calculate_miner_metrics
 from dataclasses import dataclass
 
 @async_log
@@ -158,7 +159,7 @@ def log_stream_results(stream_results: List[StreamResult]):
     bt.logging.info(
         f"Total of failed responses: ({len(failed_responses)}):\n {failed_responses}"
     )
-
+    
     for failed_response in failed_responses:
         formatted_exception = serialize_exception_to_string(failed_response.exception)
         bt.logging.error(
@@ -193,6 +194,8 @@ async def run_step(
 
     axons = [self.metagraph.axons[uid] for uid in uids]
 
+    bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]}")
+    
     # Directly call dendrite and process responses in parallel
     streams_responses = await self.dendrite(
         axons=axons,
@@ -201,6 +204,7 @@ async def run_step(
         deserialize=False,
         streaming=True,
     )
+    bt.logging.info("Responses received, processing...")
 
     # Prepare the task for handling stream responses
     handle_stream_responses_task = asyncio.create_task(
@@ -248,6 +252,11 @@ async def run_step(
         serialize_exception_to_string(stream_result.exception)
         for stream_result in stream_results
     ]
+
+    # Calculate metrics for each miner
+    bt.logging.info("Calculating miner metrics...")
+    asyncio.create_task(calculate_miner_metrics(response_event, agent, reward_result))
+
     # Log the step event.
     event = {
         "block": self.block,

@@ -176,6 +176,13 @@ def add_miner_args(cls, parser):
         help="If set, miners will accept queries from non registered entities. (Dangerous!)",
         default=False,
     )
+    
+    parser.add_argument(
+        "--blacklist.allowed_validator_hotkey",
+        type=str,
+        help="Hotkey of the allowed validator. If set, the miner will only accept queries from this validator.",
+        default=None
+    )
 
     parser.add_argument(
         "--neuron.system_prompt",
@@ -381,7 +388,7 @@ def add_validator_args(cls, parser):
         help="Only query a single hotkey per ip.",
         default=False,
     )
-    
+
     parser.add_argument(
         "--neuron.forward_max_time",
         type=int,
@@ -389,7 +396,12 @@ def add_validator_args(cls, parser):
         default=120,
     )
 
-
+    parser.add_argument(
+        "--prometheus_port",
+        type=int,
+        help="Port for prometheus metrics",
+        default=8000
+    )
 def config(cls):
     """
     Returns the configuration object specific to this miner or validator after adding relevant arguments.
