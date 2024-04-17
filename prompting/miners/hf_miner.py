@@ -106,15 +106,20 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                 streamer (CustomTextIteratorStreamer): Iterator that holds tokens within a background Queue to be returned when sampled.
                 send (Send): bittensor aiohttp send function to send the response back to the validator.
             """
+        
+            bt.logging.debug(f"Message received with reference: '{synapse.reference}' and prompt: '{synapse.messages[-1]}'")
+            
             reference_text = synapse.reference if synapse.reference else None
             if reference_text:
+                bt.logging.debug(f"Sending provided reference: {reference_text}")
                 await send({
                     "type": "http.response.body",
                     "body": reference_text.encode('utf-8'),
                     "more_body": False
                 })
             else:
-                # You can define what to do if no reference is provided or fallback to generating a response
+                # Log that no reference was provided and a default response is being sent
+                bt.logging.debug("No reference provided, sending default response")
                 generated_text = "No reference provided"
                 await send({
                     "type": "http.response.body",
