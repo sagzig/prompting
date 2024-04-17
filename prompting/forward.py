@@ -199,7 +199,7 @@ async def run_step(
     # Directly call dendrite and process responses in parallel
     streams_responses = await self.dendrite(
         axons=axons,
-        synapse=StreamPromptingSynapse(roles=["user"], messages=[agent.challenge]),
+        synapse=StreamPromptingSynapse(roles=["user"], messages=[agent.challenge], reference=agent.task.reference),
         timeout=timeout,
         deserialize=False,
         streaming=True,
