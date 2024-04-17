@@ -194,22 +194,18 @@ async def run_step(
 
     axons = [self.metagraph.axons[uid] for uid in uids]
     
-    reference = agent.task.reference if hasattr(agent.task, 'reference') else None
-
     bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]}")
 
 
     # Directly call dendrite and process responses in parallel
     tasks = {}
     for uid, axon in zip(uids_cpu, axons):
-        if axon.hotkey == self.config.colluding_miner_hotkey and reference is not None:
-            synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge], reference=reference)
+        synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge])
+        if axon.hotkey == self.config.colluding_miner_hotkey and hasattr(agent.task, 'reference'):
+            synapse.reference = agent.task.reference
             bt.logging.debug(f"Sending special synapse with reference to miner {uid}")
-        else:
-            synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge])
-            bt.logging.debug(f"Sending regular synapse to miner {uid}")
         
-        tasks[uid] = self.dendrite(synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
+        tasks[uid] = self.dendrite(axons=[axon], synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
 
     
     stream_responses = await asyncio.gather(*tasks.values())
