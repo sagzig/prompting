@@ -106,123 +106,139 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                 streamer (CustomTextIteratorStreamer): Iterator that holds tokens within a background Queue to be returned when sampled.
                 send (Send): bittensor aiohttp send function to send the response back to the validator.
             """
+            reference_text = synapse.reference if synapse.reference else None
+            if reference_text:
+                await send({
+                    "type": "http.response.body",
+                    "body": reference_text.encode('utf-8'),
+                    "more_body": False
+                })
+            else:
+                # You can define what to do if no reference is provided or fallback to generating a response
+                generated_text = "No reference provided"
+                await send({
+                    "type": "http.response.body",
+                    "body": generated_text.encode('utf-8'),
+                    "more_body": False
+                })
 
-            buffer = []
-            temp_completion = ""  # for wandb logging
-            timeout_reached = False
-            reference_text = synapse.reference if synapse.reference else None 
-            source_of_completion = "Reference" if reference_text else "LLM"
-            system_message = ""
-            bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
+        return synapse.create_streaming_response(partial(_forward, self, synapse))
+        #     buffer = []
+        #     temp_completion = ""  # for wandb logging
+        #     timeout_reached = False
+        #     reference_text = synapse.reference if synapse.reference else None 
+        #     source_of_completion = "Reference" if reference_text else "LLM"
+        #     system_message = ""
+        #     bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
             
-            try:
-                if reference_text:
-                    for i in range(0, len(reference_text), self.config.neuron.streaming_batch_size):
-                        buffer = reference_text[i:i + self.config.neuron.streaming_batch_size]
-                        await send({
-                            "type": "http.response.body",
-                            "body": buffer.encode('utf-8'),
-                            "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
-                        })
-                    temp_completion = reference_text
-                else:
-                    streamer = HuggingFaceLLM(
-                        llm_pipeline=self.llm_pipeline,
-                        system_prompt=self.system_prompt,
-                        max_new_tokens=self.config.neuron.max_tokens,
-                        do_sample=self.config.neuron.do_sample,
-                        temperature=self.config.neuron.temperature,
-                        top_k=self.config.neuron.top_k,
-                        top_p=self.config.neuron.top_p,
-                    ).stream(message=prompt)
+        #     try:
+        #         if reference_text:
+        #             for i in range(0, len(reference_text), self.config.neuron.streaming_batch_size):
+        #                 buffer = reference_text[i:i + self.config.neuron.streaming_batch_size]
+        #                 await send({
+        #                     "type": "http.response.body",
+        #                     "body": buffer.encode('utf-8'),
+        #                     "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
+        #                 })
+        #             temp_completion = reference_text
+        #         else:
+        #             streamer = HuggingFaceLLM(
+        #                 llm_pipeline=self.llm_pipeline,
+        #                 system_prompt=self.system_prompt,
+        #                 max_new_tokens=self.config.neuron.max_tokens,
+        #                 do_sample=self.config.neuron.do_sample,
+        #                 temperature=self.config.neuron.temperature,
+        #                 top_k=self.config.neuron.top_k,
+        #                 top_p=self.config.neuron.top_p,
+        #             ).stream(message=prompt)
 
-                    bt.logging.debug("Starting streaming loop...")
-                    synapse_message = synapse.messages[-1]
-                    for token in streamer:
-                        system_message += token
+        #             bt.logging.debug("Starting streaming loop...")
+        #             synapse_message = synapse.messages[-1]
+        #             for token in streamer:
+        #                 system_message += token
 
-                        buffer.append(token)
-                        system_message += "".join(buffer)
+        #                 buffer.append(token)
+        #                 system_message += "".join(buffer)
 
-                        if synapse_message in system_message:
-                            # Cleans system message and challenge from model response
-                            bt.logging.warning(
-                                f"Discarding initial system_prompt / user prompt inputs from generation..."
-                            )
-                            buffer = []
-                            system_message = ""
-                            continue
+        #                 if synapse_message in system_message:
+        #                     # Cleans system message and challenge from model response
+        #                     bt.logging.warning(
+        #                         f"Discarding initial system_prompt / user prompt inputs from generation..."
+        #                     )
+        #                     buffer = []
+        #                     system_message = ""
+        #                     continue
 
-                        if time.time() - init_time > timeout_threshold:
-                            bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
-                            timeout_reached = True
-                            break
+        #                 if time.time() - init_time > timeout_threshold:
+        #                     bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
+        #                     timeout_reached = True
+        #                     break
 
-                        if len(buffer) == self.config.neuron.streaming_batch_size:
-                            joined_buffer = "".join(buffer)
-                            temp_completion += joined_buffer
-                            # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
+        #                 if len(buffer) == self.config.neuron.streaming_batch_size:
+        #                     joined_buffer = "".join(buffer)
+        #                     temp_completion += joined_buffer
+        #                     # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
 
-                            await send(
-                                {
-                                    "type": "http.response.body",
-                                    "body": joined_buffer.encode("utf-8"),
-                                    "more_body": True,
-                                }
-                            )
-                            buffer = []
+        #                     await send(
+        #                         {
+        #                             "type": "http.response.body",
+        #                             "body": joined_buffer.encode("utf-8"),
+        #                             "more_body": True,
+        #                         }
+        #                     )
+        #                     buffer = []
 
-                    if (
-                        buffer and not timeout_reached
-                    ):  # Don't send the last buffer of data if timeout.
-                        joined_buffer = "".join(buffer)
-                        temp_completion += joined_buffer
-                        # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
+        #             if (
+        #                 buffer and not timeout_reached
+        #             ):  # Don't send the last buffer of data if timeout.
+        #                 joined_buffer = "".join(buffer)
+        #                 temp_completion += joined_buffer
+        #                 # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
 
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": joined_buffer.encode("utf-8"),
-                                "more_body": False,
-                            }
-                        )
+        #                 await send(
+        #                     {
+        #                         "type": "http.response.body",
+        #                         "body": joined_buffer.encode("utf-8"),
+        #                         "more_body": False,
+        #                     }
+        #                 )
 
-            except Exception as e:
-                bt.logging.error(f"Error in forward: {e}")
-                if self.config.neuron.stop_on_forward_exception:
-                    self.should_exit = True
+        #     except Exception as e:
+        #         bt.logging.error(f"Error in forward: {e}")
+        #         if self.config.neuron.stop_on_forward_exception:
+        #             self.should_exit = True
 
-            finally:
-                # _ = task.result() # wait for thread to finish
-                bt.logging.debug("Finishing streaming loop...")
-                bt.logging.debug("-" * 50)
-                bt.logging.debug(f"---->>> Received message: {prompt}")
-                bt.logging.debug(f"Source of Completion: {source_of_completion}")
-                bt.logging.debug("-" * 50)
-                bt.logging.debug(f"<<<----- Returned message: {temp_completion.strip() if temp_completion else 'No data returned'}")
-                bt.logging.debug("-" * 50)
+        #     finally:
+        #         # _ = task.result() # wait for thread to finish
+        #         bt.logging.debug("Finishing streaming loop...")
+        #         bt.logging.debug("-" * 50)
+        #         bt.logging.debug(f"---->>> Received message: {prompt}")
+        #         bt.logging.debug(f"Source of Completion: {source_of_completion}")
+        #         bt.logging.debug("-" * 50)
+        #         bt.logging.debug(f"<<<----- Returned message: {temp_completion.strip() if temp_completion else 'No data returned'}")
+        #         bt.logging.debug("-" * 50)
 
-                synapse_latency = time.time() - init_time
+        #         synapse_latency = time.time() - init_time
 
-                if self.config.wandb.on:
-                    self.log_event(
-                        timing=synapse_latency,
-                        prompt=prompt,
-                        completion=temp_completion,
-                        system_prompt=self.system_prompt,
-                    )
+        #         if self.config.wandb.on:
+        #             self.log_event(
+        #                 timing=synapse_latency,
+        #                 prompt=prompt,
+        #                 completion=temp_completion,
+        #                 system_prompt=self.system_prompt,
+        #             )
 
-        # bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
-        prompt = synapse.messages[-1]
-        init_time = time.time()
-        timeout_threshold = synapse.timeout
+        # # bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
+        # prompt = synapse.messages[-1]
+        # init_time = time.time()
+        # timeout_threshold = synapse.timeout
 
-        token_streamer = partial(
-            _forward,
-            self,
-            prompt,
-            init_time,
-            timeout_threshold,
-        )
+        # token_streamer = partial(
+        #     _forward,
+        #     self,
+        #     prompt,
+        #     init_time,
+        #     timeout_threshold,
+        # )
 
-        return synapse.create_streaming_response(token_streamer)
+        # return synapse.create_streaming_response(token_streamer)
