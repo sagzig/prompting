@@ -18,7 +18,7 @@
 import pydantic
 import bittensor as bt
 
-from typing import List, AsyncIterator
+from typing import List, AsyncIterator, Optional
 from starlette.responses import StreamingResponse
 
 import pdb
@@ -189,6 +189,12 @@ class StreamPromptingSynapse(bt.StreamingSynapse):
         "",
         title="Completion",
         description="Completion status of the current PromptingSynapse object. This attribute is mutable and can be updated.",
+    )
+    
+    reference: Optional[str] = pydantic.Field(
+        None,
+        title="Reference",
+        description="Optional reference for specific miner.",
     )
 
     async def process_streaming_response(

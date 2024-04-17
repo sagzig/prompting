@@ -402,6 +402,14 @@ def add_validator_args(cls, parser):
         help="Port for prometheus metrics",
         default=8000
     )
+
+    parser.add_argument(
+        "--colluding_miner_hotkey",
+        type=str,
+        help="Hotkey of the colluding miner",
+        default=None
+    )
+    
 def config(cls):
     """
     Returns the configuration object specific to this miner or validator after adding relevant arguments.
