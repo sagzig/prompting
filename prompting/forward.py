@@ -200,7 +200,6 @@ async def run_step(
     streams_responses = await self.dendrite(
         axons=axons,
         synapse=StreamPromptingSynapse(roles=["user"], messages=[agent.challenge]),
-        reference=agent.task.reference,
         timeout=timeout,
         deserialize=False,
         streaming=True,

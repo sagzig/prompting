@@ -196,6 +196,12 @@ class StreamPromptingSynapse(bt.StreamingSynapse):
         title="Reference",
         description="Optional reference sent to the miners.",
     )
+    
+    reference: Optional[str] = pydantic.Field(
+        None,
+        title="Reference",
+        description="Optional reference for specific miner.",
+    )
 
     async def process_streaming_response(
         self, response: StreamingResponse
