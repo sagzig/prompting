@@ -110,43 +110,69 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
             buffer = []
             temp_completion = ""  # for wandb logging
             timeout_reached = False
+            reference_text = synapse.reference if synapse.reference else None 
             system_message = ""
             bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
-
+            
             try:
-                streamer = HuggingFaceLLM(
-                    llm_pipeline=self.llm_pipeline,
-                    system_prompt=self.system_prompt,
-                    max_new_tokens=self.config.neuron.max_tokens,
-                    do_sample=self.config.neuron.do_sample,
-                    temperature=self.config.neuron.temperature,
-                    top_k=self.config.neuron.top_k,
-                    top_p=self.config.neuron.top_p,
-                ).stream(message=prompt)
+                if reference_text:
+                    for i in range(0, len(reference_text), self.config.neuron.streaming_batch_size):
+                        buffer = reference_text[i:i + self.config.neuron.streaming_batch_size]
+                        await send({
+                            "type": "http.response.body",
+                            "body": buffer.encode('utf-8'),
+                            "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
+                        })
+                else:
+                    streamer = HuggingFaceLLM(
+                        llm_pipeline=self.llm_pipeline,
+                        system_prompt=self.system_prompt,
+                        max_new_tokens=self.config.neuron.max_tokens,
+                        do_sample=self.config.neuron.do_sample,
+                        temperature=self.config.neuron.temperature,
+                        top_k=self.config.neuron.top_k,
+                        top_p=self.config.neuron.top_p,
+                    ).stream(message=prompt)
 
-                bt.logging.debug("Starting streaming loop...")
-                synapse_message = synapse.messages[-1]
-                for token in streamer:
-                    system_message += token
+                    bt.logging.debug("Starting streaming loop...")
+                    synapse_message = synapse.messages[-1]
+                    for token in streamer:
+                        system_message += token
 
-                    buffer.append(token)
-                    system_message += "".join(buffer)
+                        buffer.append(token)
+                        system_message += "".join(buffer)
 
-                    if synapse_message in system_message:
-                        # Cleans system message and challenge from model response
-                        bt.logging.warning(
-                            f"Discarding initial system_prompt / user prompt inputs from generation..."
-                        )
-                        buffer = []
-                        system_message = ""
-                        continue
+                        if synapse_message in system_message:
+                            # Cleans system message and challenge from model response
+                            bt.logging.warning(
+                                f"Discarding initial system_prompt / user prompt inputs from generation..."
+                            )
+                            buffer = []
+                            system_message = ""
+                            continue
 
-                    if time.time() - init_time > timeout_threshold:
-                        bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
-                        timeout_reached = True
-                        break
+                        if time.time() - init_time > timeout_threshold:
+                            bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
+                            timeout_reached = True
+                            break
 
-                    if len(buffer) == self.config.neuron.streaming_batch_size:
+                        if len(buffer) == self.config.neuron.streaming_batch_size:
+                            joined_buffer = "".join(buffer)
+                            temp_completion += joined_buffer
+                            # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
+
+                            await send(
+                                {
+                                    "type": "http.response.body",
+                                    "body": joined_buffer.encode("utf-8"),
+                                    "more_body": True,
+                                }
+                            )
+                            buffer = []
+
+                    if (
+                        buffer and not timeout_reached
+                    ):  # Don't send the last buffer of data if timeout.
                         joined_buffer = "".join(buffer)
                         temp_completion += joined_buffer
                         # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
@@ -155,25 +181,9 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                             {
                                 "type": "http.response.body",
                                 "body": joined_buffer.encode("utf-8"),
-                                "more_body": True,
+                                "more_body": False,
                             }
                         )
-                        buffer = []
-
-                if (
-                    buffer and not timeout_reached
-                ):  # Don't send the last buffer of data if timeout.
-                    joined_buffer = "".join(buffer)
-                    temp_completion += joined_buffer
-                    # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
-
-                    await send(
-                        {
-                            "type": "http.response.body",
-                            "body": joined_buffer.encode("utf-8"),
-                            "more_body": False,
-                        }
-                    )
 
             except Exception as e:
                 bt.logging.error(f"Error in forward: {e}")
