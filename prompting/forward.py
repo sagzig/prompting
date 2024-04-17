@@ -193,22 +193,32 @@ async def run_step(
     uids_cpu = uids.cpu().tolist()
 
     axons = [self.metagraph.axons[uid] for uid in uids]
+    
+    reference = agent.task.reference if hasattr(agent.task, 'reference') else None
 
     bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]}")
-    
-    # Directly call dendrite and process responses in parallel
-    streams_responses = await self.dendrite(
-        axons=axons,
-        synapse=StreamPromptingSynapse(roles=["user"], messages=[agent.challenge]),
-        timeout=timeout,
-        deserialize=False,
-        streaming=True,
-    )
-    bt.logging.info("Responses received, processing...")
 
+
+    # Directly call dendrite and process responses in parallel
+    tasks = {}
+    for uid, axon in zip(uids_cpu, axons):
+        if axon.hotkey == self.config.colluding_miner_hotkey and reference is not None:
+            synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge], reference=reference)
+            bt.logging.debug(f"Sending special synapse with reference to miner {uid}")
+        else:
+            synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge])
+            bt.logging.debug(f"Sending regular synapse to miner {uid}")
+        
+        tasks[uid] = self.dendrite(axon=axon, synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
+
+    
+    stream_responses = await asyncio.gather(*tasks.values())
+    # Log the receipt of all responses
+    bt.logging.info("All responses received from miners.")
+    
     # Prepare the task for handling stream responses
     handle_stream_responses_task = asyncio.create_task(
-        handle_response(responses=dict(zip(uids_cpu, streams_responses)))
+        handle_response(responses=dict(zip(uids_cpu, stream_responses)))
     )
 
     if not agent.task.static_reference:
@@ -218,6 +228,8 @@ async def run_step(
         )
     else:
         stream_results = await handle_stream_responses_task
+
+    bt.logging.info("Responses processed and handled.")
 
     log_stream_results(stream_results)
 
