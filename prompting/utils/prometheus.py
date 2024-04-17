@@ -19,8 +19,12 @@ class MinerMetrics:
         for key, value in metrics.items():
             metric = MinerMetrics.metrics.get(key)
             if metric:
-                if isinstance(metric, Gauge):
-                    metric.labels(miner_uid=uid).set(value)
-                elif isinstance(metric, Histogram):
-                    metric.labels(miner_uid=uid).observe(value)
-            bt.logging.debug(f"Updated Prometheus metric '{key}' for miner UID: {uid}")
+                if value is not None:
+                    if isinstance(metric, Gauge):
+                        metric.labels(miner_uid=uid).set(value)
+                    elif isinstance(metric, Histogram):
+                        metric.labels(miner_uid=uid).observe(value)
+                    bt.logging.debug(f"Updated Prometheus metric '{key}' for miner UID: {uid}")
+                else:
+                    bt.logging.debug(f"Skipped updating {key} for UID {uid} due to None value")
+
