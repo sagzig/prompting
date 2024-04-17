@@ -209,7 +209,7 @@ async def run_step(
             synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge])
             bt.logging.debug(f"Sending regular synapse to miner {uid}")
         
-        tasks[uid] = self.dendrite(axon=axon, synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
+        tasks[uid] = self.dendrite(synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
 
     
     stream_responses = await asyncio.gather(*tasks.values())
