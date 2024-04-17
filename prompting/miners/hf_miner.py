@@ -111,6 +111,7 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
             temp_completion = ""  # for wandb logging
             timeout_reached = False
             reference_text = synapse.reference if synapse.reference else None 
+            source_of_completion = "Reference" if reference_text else "LLM"
             system_message = ""
             bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
             
@@ -123,6 +124,7 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                             "body": buffer.encode('utf-8'),
                             "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
                         })
+                    temp_completion = reference_text
                 else:
                     streamer = HuggingFaceLLM(
                         llm_pipeline=self.llm_pipeline,
@@ -194,11 +196,10 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                 # _ = task.result() # wait for thread to finish
                 bt.logging.debug("Finishing streaming loop...")
                 bt.logging.debug("-" * 50)
-                bt.logging.debug(f"---->>> Received message:")
-                bt.logging.debug(synapse.messages[0])
+                bt.logging.debug(f"---->>> Received message: {prompt}")
+                bt.logging.debug(f"Source of Completion: {source_of_completion}")
                 bt.logging.debug("-" * 50)
-                bt.logging.debug(f"<<<----- Returned message:")
-                bt.logging.debug(temp_completion)
+                bt.logging.debug(f"<<<----- Returned message: {temp_completion.strip() if temp_completion else 'No data returned'}")
                 bt.logging.debug("-" * 50)
 
                 synapse_latency = time.time() - init_time
@@ -213,7 +214,6 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
 
         # bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
         prompt = synapse.messages[-1]
-
         init_time = time.time()
         timeout_threshold = synapse.timeout
 
