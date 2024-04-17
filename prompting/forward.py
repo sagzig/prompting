@@ -193,28 +193,23 @@ async def run_step(
     uids_cpu = uids.cpu().tolist()
 
     axons = [self.metagraph.axons[uid] for uid in uids]
-    
+
     bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]}")
-
-
+    
     # Directly call dendrite and process responses in parallel
-    tasks = {}
-    for uid, axon in zip(uids_cpu, axons):
-        synapse = StreamPromptingSynapse(roles=["user"], messages=[agent.challenge])
-        if axon.hotkey == self.config.colluding_miner_hotkey and hasattr(agent.task, 'reference'):
-            synapse.reference = agent.task.reference
-            bt.logging.debug(f"Sending special synapse with reference to miner {uid}")
-        
-        tasks[uid] = self.dendrite(axons=[axon], synapse=synapse, timeout=timeout, deserialize=False, streaming=True)
+    streams_responses = await self.dendrite(
+        axons=axons,
+        synapse=StreamPromptingSynapse(roles=["user"], messages=[agent.challenge]),
+        reference=agent.task.reference,
+        timeout=timeout,
+        deserialize=False,
+        streaming=True,
+    )
+    bt.logging.info("Responses received, processing...")
 
-    
-    stream_responses = await asyncio.gather(*tasks.values())
-    # Log the receipt of all responses
-    bt.logging.info("All responses received from miners.")
-    
     # Prepare the task for handling stream responses
     handle_stream_responses_task = asyncio.create_task(
-        handle_response(responses=dict(zip(uids_cpu, stream_responses)))
+        handle_response(responses=dict(zip(uids_cpu, streams_responses)))
     )
 
     if not agent.task.static_reference:
@@ -224,8 +219,6 @@ async def run_step(
         )
     else:
         stream_results = await handle_stream_responses_task
-
-    bt.logging.info("Responses processed and handled.")
 
     log_stream_results(stream_results)
 
