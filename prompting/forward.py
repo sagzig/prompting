@@ -36,9 +36,13 @@ from dataclasses import dataclass
 
 @async_log
 async def generate_reference(agent):    
-    loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, agent.task.generate_reference, agent.llm_pipeline)
-    return result    
+    try:
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, agent.task.generate_reference, agent.llm_pipeline)
+        bt.logging.debug(f"Reference generated successfully: {result}")
+        return result 
+    except Exception as e:
+        bt.logging.error(f"Failed to generate reference: {e}")
 
 @async_log
 async def execute_dendrite_call(dendrite_call):

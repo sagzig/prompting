@@ -80,6 +80,7 @@ class Task(ABC):
 
     def generate_reference(self, pipeline: BasePipeline, clean=True) -> str:
         """Generates a reference answer to be used for scoring miner completions"""
+        bt.logging.info("Starting to generate reference...")
         t0 = time.time()
         if not self.static_reference:
             bt.logging.info("🤖 Generating reference...")
@@ -90,6 +91,7 @@ class Task(ABC):
                 pipeline=pipeline,
                 clean=clean,
             )
+            bt.logging.info(f"Generated reference: {self.reference}")
 
         self.reference_time = time.time() - t0
         return self.reference
@@ -107,6 +109,7 @@ class Task(ABC):
             )
 
         self.query_time = time.time() - t0
+        bt.logging.info(f"Generated query: {self.query}")
         return self.query
 
     def format_challenge(self, challenge) -> str:
