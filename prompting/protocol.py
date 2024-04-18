@@ -191,10 +191,10 @@ class StreamPromptingSynapse(bt.StreamingSynapse):
         description="Completion status of the current PromptingSynapse object. This attribute is mutable and can be updated.",
     )
     
-    reference: Optional[str] = pydantic.Field(
+    reference: str = pydantic.Field(
         None,
         title="Reference",
-        description="Optional reference sent to the miners.",
+        description="reference sent to the miners.",
     )
 
     async def process_streaming_response(
