@@ -192,9 +192,9 @@ class StreamPromptingSynapse(bt.StreamingSynapse):
     )
     
     reference: str = pydantic.Field(
-        None,
+        default="",
         title="Reference",
-        description="reference sent to the miners.",
+        description="Reference sent to the miners.",
     )
 
     async def process_streaming_response(

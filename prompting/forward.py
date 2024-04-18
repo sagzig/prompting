@@ -198,8 +198,11 @@ async def run_step(
 
     axons = [self.metagraph.axons[uid] for uid in uids]
 
+    if not agent.task.reference: 
+        await generate_reference(agent)
+        
     bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]} and reference: {agent.task.reference}")
-    
+
     # Directly call dendrite and process responses in parallel
     streams_responses = await self.dendrite(
         axons=axons,
