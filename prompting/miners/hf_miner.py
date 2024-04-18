@@ -118,13 +118,14 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
             try:
                 if reference_text:
                     for i in range(0, len(reference_text), self.config.neuron.streaming_batch_size):
-                        buffer = reference_text[i:i + self.config.neuron.streaming_batch_size]
+                        end_index = i + self.config.neuron.streaming_batch_size
+                        chunk = reference_text[i:end_index]
                         await send({
                             "type": "http.response.body",
-                            "body": buffer.encode('utf-8'),
-                            "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
+                            "body": chunk.encode('utf-8'),
+                            "more_body": end_index < len(reference_text)
                         })
-                    temp_completion = reference_text
+                    temp_completion += chunk
                 else:
                     streamer = HuggingFaceLLM(
                         llm_pipeline=self.llm_pipeline,
