@@ -20,7 +20,7 @@ async def calculate_miner_metrics(response_event, agent, reward_result):
         challenge_time = getattr(agent, 'challenge_time', 0)
         reference_time = getattr(agent.task, 'reference_time', 0)
         step_time = getattr(response_event, 'step_time', 0)
-        
+        bt.logging.debug(f"Reference for UID {uid_str}: {agent.task.reference}")
         # Initialize or reset the scores
         rouge_score = 0
         relevance_score = 0
