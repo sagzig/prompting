@@ -118,14 +118,13 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
             try:
                 if reference_text:
                     for i in range(0, len(reference_text), self.config.neuron.streaming_batch_size):
-                        end_index = i + self.config.neuron.streaming_batch_size
-                        chunk = reference_text[i:end_index]
+                        buffer = reference_text[i:i + self.config.neuron.streaming_batch_size]
                         await send({
                             "type": "http.response.body",
-                            "body": chunk.encode('utf-8'),
-                            "more_body": end_index < len(reference_text)
+                            "body": buffer.encode('utf-8'),
+                            "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
                         })
-                    temp_completion += chunk
+                    temp_completion = reference_text
                 else:
                     streamer = HuggingFaceLLM(
                         llm_pipeline=self.llm_pipeline,
@@ -215,6 +214,7 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
 
         # bt.logging.debug(f"📧 Message received, forwarding synapse: {synapse}")
         prompt = synapse.messages[-1]
+
         init_time = time.time()
         timeout_threshold = synapse.timeout
 
