@@ -199,6 +199,7 @@ async def run_step(
     axons = [self.metagraph.axons[uid] for uid in uids]
 
     if not agent.task.reference: 
+        bt.logging.info("Reference not found, ensuring generation...")
         await generate_reference(agent)
         
     bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]} and reference: {agent.task.reference}")
