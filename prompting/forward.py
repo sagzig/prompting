@@ -192,9 +192,9 @@ async def run_step(
 
     # Record event start time.
     start_time = time.time()
-
-    if agent.task.reference is None:
-            bt.logging.error("Reference not found")
+    
+    # Wait for the reference to be ready
+    await agent.task.reference_ready.wait()
             
     # Get the list of uids to query for this step.
     uids = get_random_uids(self, k=k, exclude=exclude or []).to(self.device)

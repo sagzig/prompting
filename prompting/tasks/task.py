@@ -1,3 +1,4 @@
+from asyncio import Event
 import time
 import bittensor as bt
 from abc import ABC
@@ -91,6 +92,7 @@ class Task(ABC):
                 pipeline=pipeline,
                 clean=clean,
             )
+            self.reference_ready.set()
             bt.logging.info(f"Generated reference: {self.reference}")
 
         self.reference_time = time.time() - t0
