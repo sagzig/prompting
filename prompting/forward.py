@@ -192,17 +192,19 @@ async def run_step(
 
     # Record event start time.
     start_time = time.time()
+
+    if agent.task.reference is None:
+            bt.logging.error("Reference not found")
+            
     # Get the list of uids to query for this step.
     uids = get_random_uids(self, k=k, exclude=exclude or []).to(self.device)
     uids_cpu = uids.cpu().tolist()
 
     axons = [self.metagraph.axons[uid] for uid in uids]
 
-    if not agent.task.reference: 
-        bt.logging.info("Reference not found, ensuring generation...")
-        await generate_reference(agent)
-        
-    bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]} and reference: {agent.task.reference}")
+    # if not agent.task.reference: 
+    #     await generate_reference(agent)
+    # bt.logging.info(f"Sending queries to miners: {uids_cpu} with messages: {[agent.challenge]} and reference: {agent.task.reference}")
 
     # Directly call dendrite and process responses in parallel
     streams_responses = await self.dendrite(
