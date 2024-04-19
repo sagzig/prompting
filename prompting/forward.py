@@ -193,8 +193,9 @@ async def run_step(
     # Record event start time.
     start_time = time.time()
     
-    # Wait for the reference to be ready
-    await agent.task.reference_ready.wait()
+    # Check if the task type requires waiting for the reference
+    if hasattr(agent.task, 'reference_ready'):
+        await agent.task.reference_ready.wait()
             
     # Get the list of uids to query for this step.
     uids = get_random_uids(self, k=k, exclude=exclude or []).to(self.device)
