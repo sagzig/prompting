@@ -125,70 +125,67 @@ class HuggingFaceMiner(BaseStreamPromptingMiner):
                             "more_body": i + self.config.neuron.streaming_batch_size < len(reference_text)
                         })
                     temp_completion = reference_text
-                # else:
-                #     streamer = HuggingFaceLLM(
-                #         llm_pipeline=self.llm_pipeline,
-                #         system_prompt=self.system_prompt,
-                #         max_new_tokens=self.config.neuron.max_tokens,
-                #         do_sample=self.config.neuron.do_sample,
-                #         temperature=self.config.neuron.temperature,
-                #         top_k=self.config.neuron.top_k,
-                #         top_p=self.config.neuron.top_p,
-                #     ).stream(message=prompt)
-
-                #     bt.logging.debug("Starting streaming loop...")
-                #     synapse_message = synapse.messages[-1]
-                #     for token in streamer:
-                #         system_message += token
-
-                #         buffer.append(token)
-                #         system_message += "".join(buffer)
-
-                #         if synapse_message in system_message:
-                #             # Cleans system message and challenge from model response
-                #             bt.logging.warning(
-                #                 f"Discarding initial system_prompt / user prompt inputs from generation..."
-                #             )
-                #             buffer = []
-                #             system_message = ""
-                #             continue
-
-                #         if time.time() - init_time > timeout_threshold:
-                #             bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
-                #             timeout_reached = True
-                #             break
-
-                #         if len(buffer) == self.config.neuron.streaming_batch_size:
-                #             joined_buffer = "".join(buffer)
-                #             temp_completion += joined_buffer
-                #             # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
-
-                #             await send(
-                #                 {
-                #                     "type": "http.response.body",
-                #                     "body": joined_buffer.encode("utf-8"),
-                #                     "more_body": True,
-                #                 }
-                #             )
-                #             buffer = []
-
-                #     if (
-                #         buffer and not timeout_reached
-                #     ):  # Don't send the last buffer of data if timeout.
-                #         joined_buffer = "".join(buffer)
-                #         temp_completion += joined_buffer
-                #         # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
-
-                #         await send(
-                #             {
-                #                 "type": "http.response.body",
-                #                 "body": joined_buffer.encode("utf-8"),
-                #                 "more_body": False,
-                #             }
-                #         )
                 else:
-                    bt.logging.error("No reference provided and LLM fallback is disabled for testing.")
-                    raise Exception("No reference text provided, and LLM fallback is currently disabled.")
+                    streamer = HuggingFaceLLM(
+                        llm_pipeline=self.llm_pipeline,
+                        system_prompt=self.system_prompt,
+                        max_new_tokens=self.config.neuron.max_tokens,
+                        do_sample=self.config.neuron.do_sample,
+                        temperature=self.config.neuron.temperature,
+                        top_k=self.config.neuron.top_k,
+                        top_p=self.config.neuron.top_p,
+                    ).stream(message=prompt)
+
+                    bt.logging.debug("Starting streaming loop...")
+                    synapse_message = synapse.messages[-1]
+                    for token in streamer:
+                        system_message += token
+
+                        buffer.append(token)
+                        system_message += "".join(buffer)
+
+                        if synapse_message in system_message:
+                            # Cleans system message and challenge from model response
+                            bt.logging.warning(
+                                f"Discarding initial system_prompt / user prompt inputs from generation..."
+                            )
+                            buffer = []
+                            system_message = ""
+                            continue
+
+                        if time.time() - init_time > timeout_threshold:
+                            bt.logging.debug(f"⏰ Timeout reached, stopping streaming")
+                            timeout_reached = True
+                            break
+
+                        if len(buffer) == self.config.neuron.streaming_batch_size:
+                            joined_buffer = "".join(buffer)
+                            temp_completion += joined_buffer
+                            # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
+
+                            await send(
+                                {
+                                    "type": "http.response.body",
+                                    "body": joined_buffer.encode("utf-8"),
+                                    "more_body": True,
+                                }
+                            )
+                            buffer = []
+
+                    if (
+                        buffer and not timeout_reached
+                    ):  # Don't send the last buffer of data if timeout.
+                        joined_buffer = "".join(buffer)
+                        temp_completion += joined_buffer
+                        # bt.logging.debug(f"Streamed tokens: {joined_buffer}")
+
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": joined_buffer.encode("utf-8"),
+                                "more_body": False,
+                            }
+                        )
 
             except Exception as e:
                 bt.logging.error(f"Error in forward: {e}")
