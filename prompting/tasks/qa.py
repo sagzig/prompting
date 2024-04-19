@@ -59,6 +59,7 @@ class QuestionAnsweringTask(Task):
     ]
 
     def __init__(self, llm_pipeline, context, create_reference=True):
+        super().__init__()
         self.context = context
 
         self.query_system_prompt = QUERY_SYSTEM_PROMPT
@@ -71,6 +72,7 @@ class QuestionAnsweringTask(Task):
         )
         if create_reference:
             self.reference = self.generate_reference(llm_pipeline)
+            self.reference_ready.set()
 
         self.topic = context.title
         self.subtopic = context.topic

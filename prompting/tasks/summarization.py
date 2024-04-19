@@ -47,6 +47,7 @@ class SummarizationTask(Task):
     static_query = True
 
     def __init__(self, llm_pipeline: Pipeline, context: str, create_reference=True):
+        super().__init__()
         self.context = context
 
         # Query is just the article title and section name
@@ -58,6 +59,7 @@ class SummarizationTask(Task):
         )
         if create_reference:
             self.reference = self.generate_reference(llm_pipeline)
+            self.reference_ready.set()
 
         self.topic = context.title
         self.subtopic = context.topic

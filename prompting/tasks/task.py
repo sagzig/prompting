@@ -1,8 +1,8 @@
-from asyncio import Event
+import asyncio
 import time
 import bittensor as bt
 from abc import ABC
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from enum import Enum
 from typing import List, Union, Dict
 from prompting.llms import HuggingFaceLLM, vLLM_LLM, BasePipeline
@@ -42,7 +42,11 @@ class Task(ABC):
     query_system_prompt = ""
     query_prompt = ""
     cleaner = None
+    reference_ready: asyncio.Event = field(default_factory=asyncio.Event, init=False)
 
+    def __post_init__(self):
+        self.reference_ready.clear()
+        
     def __str__(self):
         return f"{self.__class__.__name__}(name={self.name!r}, desc={self.desc!r}, goal={self.goal!r}, query={self.query!r}, reference={self.reference!r}, topic={self.topic!r}, subtopic={self.subtopic!r}, tags={self.tags!r})"
 
@@ -92,7 +96,6 @@ class Task(ABC):
                 pipeline=pipeline,
                 clean=clean,
             )
-            self.reference_ready.set()
             bt.logging.info(f"Generated reference: {self.reference}")
 
         self.reference_time = time.time() - t0
