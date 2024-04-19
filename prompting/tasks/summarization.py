@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from prompting.tasks import Task
 from transformers import Pipeline
@@ -47,7 +48,6 @@ class SummarizationTask(Task):
     static_query = True
 
     def __init__(self, llm_pipeline: Pipeline, context: str, create_reference=True):
-        super().__init__()
         self.context = context
 
         # Query is just the article title and section name
@@ -57,6 +57,8 @@ class SummarizationTask(Task):
         self.reference_prompt = REFERENCE_PROMPT_TEMPLATE.format(
             context=context.content
         )
+        self.reference_ready = asyncio.Event()
+        
         if create_reference:
             self.reference = self.generate_reference(llm_pipeline)
             self.reference_ready.set()

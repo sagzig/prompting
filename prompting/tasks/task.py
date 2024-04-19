@@ -44,9 +44,6 @@ class Task(ABC):
     cleaner = None
     reference_ready: asyncio.Event = field(default_factory=asyncio.Event, init=False)
 
-    def __post_init__(self):
-        self.reference_ready.clear()
-        
     def __str__(self):
         return f"{self.__class__.__name__}(name={self.name!r}, desc={self.desc!r}, goal={self.goal!r}, query={self.query!r}, reference={self.reference!r}, topic={self.topic!r}, subtopic={self.subtopic!r}, tags={self.tags!r})"
 
