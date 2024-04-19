@@ -194,8 +194,7 @@ async def run_step(
     start_time = time.time()
     
     # Check if the task type requires waiting for the reference
-    if hasattr(agent.task, 'reference_ready'):
-        await agent.task.reference_ready.wait()
+    
             
     # Get the list of uids to query for this step.
     uids = get_random_uids(self, k=k, exclude=exclude or []).to(self.device)
@@ -307,7 +306,7 @@ async def forward(self):
                 f"Failed to create {task_name} task. {sys.exc_info()}. Skipping to next task."
             )
             continue
-
+            
     # Create random agent with task, topic, profile...
     bt.logging.info(f"🤖 Creating agent for {task_name} task... ")
     agent = HumanAgent(
@@ -319,6 +318,7 @@ async def forward(self):
     while not agent.finished:
         # Note: The try catch is a safe clause to ensure that the forward loop continues even if an error occurs in run_step.
         # To be reconsidered in the next version.
+        await asyncio.sleep(5)
         try:
             # when run_step is called, the agent updates its progress
             event = await run_step(

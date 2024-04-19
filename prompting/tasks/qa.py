@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from prompting.tasks import Task
 
@@ -70,11 +69,8 @@ class QuestionAnsweringTask(Task):
         self.reference_prompt = REFERENCE_PROMPT_TEMPLATE.format(
             context=context.content, question=self.query
         )
-        self.reference_ready = asyncio.Event()
-        
         if create_reference:
             self.reference = self.generate_reference(llm_pipeline)
-            self.reference_ready.set()
 
         self.topic = context.title
         self.subtopic = context.topic
